@@ -3,134 +3,70 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Player M3U</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0-alpha1/css/bootstrap.min.css">
+    <title>Desafio Matemático - A4</title>
     <style>
-        .carousel-item {
-            display: block;
-            height: 100%;
+        body {
+            font-family: Arial, sans-serif;
+            margin: 50px auto;
+            width: 21cm;
+            height: 29.7cm;
+            padding: 20px;
+            box-sizing: border-box;
         }
-
-        .carousel-inner {
-            height: 500px;
+        .questao {
+            margin-bottom: 20px;
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
         }
-
-        .carousel-inner video {
-            object-fit: cover;
-            width: 100%;
-            height: 100%;
+        .resposta, .explicacao {
+            display: none;
+            font-weight: bold;
+            color: green;
         }
-
-        #player {
-            max-width: 100%;
-            margin: 0 auto;
+        button {
+            padding: 10px 15px;
+            font-size: 14px;
+            cursor: pointer;
+            margin-right: 5px;
         }
     </style>
 </head>
 <body>
-
-<div class="container mt-4">
-    <h1>Player M3U</h1>
-    <div class="row">
-        <div class="col-md-8">
-            <div id="carouselExample" class="carousel slide" data-bs-ride="carousel">
-                <div class="carousel-inner" id="carousel"></div>
+    <h1>📌 Desafios Matemáticos</h1>
+    
+    <script>
+        const questoes = [
+            { pergunta: "A soma de três números consecutivos é 72. Qual é o menor número?", resposta: "23", explicacao: "Os três números consecutivos podem ser representados como x, x+1 e x+2. Assim, temos: x + (x+1) + (x+2) = 72 → 3x + 3 = 72 → 3x = 69 → x = 23." },
+            { pergunta: "Um carro percorre 240 km em 3 horas. Qual é sua velocidade média?", resposta: "80 km/h", explicacao: "A velocidade média é calculada pela fórmula v = d/t, onde d é a distância e t é o tempo. Assim, v = 240 km / 3 h = 80 km/h." },
+            { pergunta: "Se um ângulo interno de um triângulo é 90°, como chamamos esse triângulo?", resposta: "Triângulo retângulo", explicacao: "Um triângulo que possui um ângulo reto (90°) é chamado de triângulo retângulo." },
+            { pergunta: "Qual é a raiz quadrada de 144?", resposta: "12", explicacao: "A raiz quadrada de 144 é o número que multiplicado por si mesmo resulta em 144, ou seja, 12 × 12 = 144." },
+            { pergunta: "Se um quadrado tem lado 6 cm, qual é sua área?", resposta: "36 cm²", explicacao: "A área de um quadrado é dada por A = lado². Assim, 6 × 6 = 36 cm²." },
+            { pergunta: "Se um produto custa R$ 200 e está com 25% de desconto, qual é o preço final?", resposta: "R$ 150", explicacao: "25% de 200 é 200 × 0,25 = 50. Então, 200 - 50 = R$ 150." },
+            { pergunta: "Qual é o resultado de 8³?", resposta: "512", explicacao: "8³ significa 8 × 8 × 8, que é igual a 512." },
+            { pergunta: "Se um círculo tem raio 7 cm, qual é aproximadamente sua área? (use π ≈ 3,14)", resposta: "153,86 cm²", explicacao: "A área do círculo é A = πr². Assim, 3,14 × 7² = 3,14 × 49 = 153,86 cm²." },
+            { pergunta: "Se 4x = 20, qual é o valor de x?", resposta: "5", explicacao: "Dividindo ambos os lados por 4, temos x = 20 ÷ 4 = 5." },
+            { pergunta: "Qual é o valor de 15% de 300?", resposta: "45", explicacao: "15% de 300 é 300 × 0,15 = 45." }
+        ];
+        
+        document.write(questoes.map((q, i) => `
+            <div class="questao">
+                <p>${i + 1}️⃣ ${q.pergunta}</p>
+                <button onclick="mostrarResposta(${i})">Mostrar Resposta</button>
+                <button onclick="mostrarExplicacao(${i})">Mostrar Explicação</button>
+                <p id="resposta${i}" class="resposta">✅ Resposta: ${q.resposta}</p>
+                <p id="explicacao${i}" class="explicacao">🔍 Explicação: ${q.explicacao}</p>
             </div>
-        </div>
-        <div class="col-md-4">
-            <div id="player" class="embed-responsive embed-responsive-16by9"></div>
-        </div>
-    </div>
-</div>
-
-<script>
-    const carousel = document.getElementById('carousel');
-    const player = document.getElementById('player');
-    let playlistData = [];
-
-    // Função para processar o arquivo M3U
-    function processPlaylist(playlist) {
-        carousel.innerHTML = '';
-        player.innerHTML = '';
-        playlistData = [];
-
-        var playlistLines = playlist.split('\n').filter(line => line.trim() !== '' && !line.startsWith('#EXTM3U'));
-
-        var currentTitle = '';
-        var currentLogo = '';
-
-        playlistLines.forEach((line, index) => {
-            if (line.startsWith('#EXTINF:')) {
-                // Captura o nome do canal/programa (se presente) no atributo tvg-name
-                let nameMatch = line.match(/tvg-name="([^"]+)"/);
-                currentTitle = nameMatch ? nameMatch[1] : `Canal ${index}`;
-
-                let logoMatch = line.match(/tvg-logo="([^"]+)"/);
-                currentLogo = logoMatch ? logoMatch[1] : '';
-            } else if (line.startsWith('http')) {
-                var url = line.trim();
-
-                // Adicionar "/live/" após a porta, se houver
-                url = url.replace(/(https?:\/\/[^\/:]+:\d+)(\/|$)/, '$1/live/');
-
-                // Verificar se já tem uma extensão
-                let hasExtension = url.match(/\.(mp4|m3u8|ts|mkv|avi|mov|flv|wmv|webm)$/i);
-                if (!hasExtension) {
-                    url += '.m3u8';
-                }
-
-                playlistData.push({
-                    url: url,
-                    title: currentTitle,  // Usa o nome do canal ou do programa
-                    logo: currentLogo
-                });
-
-                currentTitle = '';  // Resetar o título após adicionar à lista
-                currentLogo = '';   // Resetar o logo após adicionar à lista
-            }
-        });
-
-        renderPlaylistButtons();
-        initializeCarousel();
-    }
-
-    // Função para renderizar os botões da playlist
-    function renderPlaylistButtons() {
-        playlistData.forEach((data, index) => {
-            const button = document.createElement('button');
-            button.classList.add('btn', 'btn-outline-primary', 'm-2');
-            button.innerHTML = `<img src="${data.logo}" alt="Logo" width="20" height="20"> ${data.title}`;
-            button.addEventListener('click', () => playStream(data.url));
-            carousel.appendChild(button);
-        });
-    }
-
-    // Função para inicializar o carousel
-    function initializeCarousel() {
-        if (playlistData.length > 0) {
-            const firstStream = playlistData[0];
-            playStream(firstStream.url);
+        `).join(""));
+        
+    </script>
+    
+    <script>
+        function mostrarResposta(num) {
+            document.getElementById("resposta" + num).style.display = "block";
         }
-    }
-
-    // Função para tocar o stream
-    function playStream(url) {
-        player.innerHTML = `<video id="videoPlayer" class="embed-responsive-item" controls autoplay>
-                                <source src="${url}" type="application/x-mpegURL">
-                                Seu navegador não suporta este formato de vídeo.
-                            </video>`;
-    }
-
-    // Exemplo de como carregar o arquivo M3U (substitua por seu conteúdo real)
-    const exampleM3U = `#EXTM3U
-    #EXTINF:-1 tvg-name="Acompanhe a Casa" tvg-logo="https://example.com/logo1.png",Acompanhe a Casa
-    http://example.com/stream1.m3u8
-    #EXTINF:-1 tvg-name="Filme X" tvg-logo="https://example.com/logo2.png",Filme X
-    http://example.com/stream2.m3u8`;
-
-    processPlaylist(exampleM3U);
-</script>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0-alpha1/js/bootstrap.bundle.min.js"></script>
+        function mostrarExplicacao(num) {
+            document.getElementById("explicacao" + num).style.display = "block";
+        }
+    </script>
 </body>
 </html>
