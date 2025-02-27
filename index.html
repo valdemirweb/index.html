@@ -142,6 +142,14 @@
         .scroll-to-top:hover {
             background-color: #e0e0e0;
         }
+
+        .search-input {
+            margin: 20px;
+            padding: 10px;
+            width: 300px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
     </style>
 </head>
 <body>
@@ -149,7 +157,9 @@
         <h1>WEB PLAYER - EQUIPEVT</h1>
         <button onclick="chooseFile()">Carregar Arquivo M3U</button>
     </header>
-    
+
+    <input type="file" id="fileInput" accept=".m3u" style="display: none;">
+    <input type="text" id="searchInput" class="search-input" placeholder="Pesquisar canal..." oninput="filterChannels()">
 
     <div class="playlist-container">
         <div class="carousel" id="carousel"></div>
@@ -164,11 +174,7 @@
         <p>EquipeVT 2025</p>
     </footer>
 
-    <input type="file" id="fileInput" accept=".m3u" style="display: none;">
-
-    <button class="scroll-to-top" onclick="scrollToTop()">
-        &uarr;
-    </button>
+    <button class="scroll-to-top" onclick="scrollToTop()">↑</button>
 
     <script>
         var carousel = document.getElementById('carousel');
@@ -183,109 +189,79 @@
 
             reader.onload = function(e) {
                 var playlist = e.target.result;
-                showLoading(); // Mostrar o elemento de loading
+                showLoading();
                 processPlaylist(playlist);
             };
 
             reader.readAsText(file);
         });
+
         function processPlaylist(playlist) {
-    carousel.innerHTML = '';
-    player.innerHTML = '';
-    playlistData = [];
+            carousel.innerHTML = '';
+            player.innerHTML = '';
+            playlistData = [];
 
-    var playlistLines = playlist.split('\n').filter(line => line.trim() !== '' && !line.startsWith('#EXTM3U'));
+            var playlistLines = playlist.split('\n').filter(line => line.trim() !== '' && !line.startsWith('#EXTM3U'));
+            var currentTitle = '';
+            var currentLogo = '';
 
-    var currentTitle = '';
-    var currentLogo = '';
+            playlistLines.forEach((line, index) => {
+                if (line.startsWith('#EXTINF:')) {
+                    let nameMatch = line.match(/tvg-name="([^"]+)"/);
+                    currentTitle = nameMatch ? nameMatch[1] : `Canal ${index}`;
 
-    playlistLines.forEach((line, index) => {
-        if (line.startsWith('#EXTINF:')) {
-            let nameMatch = line.match(/tvg-name="([^"]+)"/);
-            currentTitle = nameMatch ? nameMatch[1] : `Canal ${index}`;
+                    let logoMatch = line.match(/tvg-logo="([^"]+)"/);
+                    currentLogo = logoMatch ? logoMatch[1] : '';
+                } else if (line.startsWith('http')) {
+                    var url = line.trim();
+                    url = url.replace(/(https?:\/\/[^\/:]+:\d+)(\/|$)/, '$1/live/');
+                    let hasExtension = url.match(/\.(mp4|m3u8|ts|mkv|avi|mov|flv|wmv|webm)$/i);
+                    if (!hasExtension) {
+                        url += '.m3u8';
+                    }
 
-            let logoMatch = line.match(/tvg-logo="([^"]+)"/);
-            currentLogo = logoMatch ? logoMatch[1] : '';
-        } else if (line.startsWith('http')) {
-            var url = line.trim();
-
-            // Adicionar "/live/" após a porta, se houver
-            url = url.replace(/(https?:\/\/[^\/:]+:\d+)(\/|$)/, '$1/live/');
-
-            // Verificar se já tem uma extensão
-            let hasExtension = url.match(/\.(mp4|m3u8|ts|mkv|avi|mov|flv|wmv|webm)$/i);
-            if (!hasExtension) {
-                url += '.m3u8';
-            }
-
-            playlistData.push({
-                url: url,
-                title: currentTitle,
-                logo: currentLogo
+                    playlistData.push({ url: url, title: currentTitle, logo: currentLogo });
+                    currentTitle = '';
+                    currentLogo = '';
+                }
             });
 
-            currentTitle = '';
-            currentLogo = '';
+            renderPlaylistButtons();
+            initializeCarousel();
         }
-    });
 
-    renderPlaylistButtons();
-    initializeCarousel();
-}
-
-
-
-var searchInput = document.createElement('input');
-searchInput.type = 'text';
-searchInput.placeholder = 'Pesquisar canal...';
-searchInput.className = 'search-input';
-searchInput.oninput = filterChannels;
-document.body.insertBefore(searchInput, carousel);
-
-function filterChannels() {
-    var searchTerm = searchInput.value.toLowerCase();
-    var buttons = document.querySelectorAll('.button');
-    
-    buttons.forEach(button => {
-        var title = button.textContent.toLowerCase();
-        if (title.includes(searchTerm)) {
-            button.style.display = 'block';
-        } else {
-            button.style.display = 'none';
+        function filterChannels() {
+            var searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            var buttons = document.querySelectorAll('.button');
+            buttons.forEach(button => {
+                var title = button.textContent.toLowerCase();
+                button.style.display = title.includes(searchTerm) ? 'block' : 'none';
+            });
         }
-    });
-}
 
+        function renderPlaylistButtons() {
+            playlistData.sort((a, b) => a.title.localeCompare(b.title, 'pt-BR'));
 
-function renderPlaylistButtons() {
-    // Ordena os canais em ordem alfabética
-    playlistData.sort((a, b) => a.title.localeCompare(b.title, 'pt-BR'));
-
-    playlistData.forEach((video, index) => {
-        var button = document.createElement('div');
-        button.className = 'button';
-        button.textContent = video.title;
-        button.onclick = function() {
-            showLoading(); // Mostrar o elemento de loading
-            changeVideo(video.url, video.title);
-        };
-
-        carousel.appendChild(button);
-    });
-}
-
+            playlistData.forEach((video) => {
+                var button = document.createElement('div');
+                button.className = 'button';
+                button.textContent = video.title;
+                button.onclick = function() {
+                    showLoading();
+                    changeVideo(video.url, video.title);
+                };
+                carousel.appendChild(button);
+            });
+        }
 
         function initializeCarousel() {
             if (carousel.childElementCount > 0) {
-                // Inicializar o carrossel usando a biblioteca Slick Carousel
-                window.addEventListener('DOMContentLoaded', function() {
-                    $('.carousel').slick({
-                        infinite: false,
-                        slidesToShow: 3,
-                        slidesToScroll: 3,
-                        dots: true,
-                        arrows: false
-                    });
+                $('.carousel').slick({
+                    infinite: false,
+                    slidesToShow: 3,
+                    slidesToScroll: 3,
+                    dots: true,
+                    arrows: false
                 });
             }
         }
@@ -296,29 +272,24 @@ function renderPlaylistButtons() {
 
             if (p2pml.hlsjs.Engine.isSupported()) {
                 var engine = new p2pml.hlsjs.Engine();
-
                 var clapprPlayer = new Clappr.Player({
                     parentId: "#player",
                     source: source,
                     mute: true,
                     autoPlay: true,
                     playback: {
-                        hlsjsConfig: {
-                            liveSyncDurationCount: 7,
-                            loader: engine.createLoaderClass()
-                        }
+                        hlsjsConfig: { liveSyncDurationCount: 7, loader: engine.createLoaderClass() }
                     }
                 });
 
                 p2pml.hlsjs.initClapprPlayer(clapprPlayer);
-                hideLoading(); // Esconder o elemento de loading
+                hideLoading();
             } else {
                 player.innerHTML = 'Player not supported :(';
-                hideLoading(); // Esconder o elemento de loading
+                hideLoading();
             }
         }
 
-        // Função para exibir o diálogo de seleção de arquivo ao clicar em um botão personalizado
         function chooseFile() {
             document.getElementById('fileInput').click();
         }
@@ -332,13 +303,8 @@ function renderPlaylistButtons() {
         }
 
         function scrollToTop() {
-            window.scrollTo({
-                top: 0,
-                behavior: 'smooth'
-            });
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
-
-        
     </script>
 </body>
 </html>
