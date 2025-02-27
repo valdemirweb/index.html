@@ -189,7 +189,7 @@
 
             reader.readAsText(file);
         });
-        function processPlaylist(playlist) {
+      function processPlaylist(playlist) {
     carousel.innerHTML = '';
     player.innerHTML = '';
     playlistData = [];
@@ -201,8 +201,9 @@
 
     playlistLines.forEach((line, index) => {
         if (line.startsWith('#EXTINF:')) {
+            // Ajustar aqui para garantir que o nome seja extraído corretamente
             let nameMatch = line.match(/tvg-name="([^"]+)"/);
-            currentTitle = nameMatch ? nameMatch[1] : `Canal ${index}`;
+            currentTitle = nameMatch ? nameMatch[1] : `Canal ${index + 1}`;
 
             let logoMatch = line.match(/tvg-logo="([^"]+)"/);
             currentLogo = logoMatch ? logoMatch[1] : '';
@@ -232,7 +233,6 @@
     renderPlaylistButtons();
     initializeCarousel();
 }
-
 
 
 var searchInput = document.createElement('input');
