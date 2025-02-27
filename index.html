@@ -1,72 +1,344 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="PT-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Desafio Matemático - A4</title>
+    <title>Streaming P2P Media Loader</title>
+    <meta charset="utf-8">
+    <script src="https://cdn.jsdelivr.net/npm/p2p-media-loader-core@latest/build/p2p-media-loader-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/p2p-media-loader-hlsjs@latest/build/p2p-media-loader-hlsjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/clappr@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick.css">
     <style>
         body {
             font-family: Arial, sans-serif;
-            margin: 50px auto;
-            width: 21cm;
-            height: 29.7cm;
-            padding: 20px;
-            box-sizing: border-box;
+            margin: 0;
         }
-        .questao {
-            margin-bottom: 20px;
+
+        header, footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             padding: 10px;
-            border-bottom: 1px solid #ddd;
+            background-color: #f5f5f5;
         }
-        .resposta, .explicacao {
-            display: none;
-            font-weight: bold;
-            color: green;
+
+        header {
+            margin-bottom: 20px; /* Adicione esta linha para definir a margem */
         }
-        button {
-            padding: 10px 15px;
-            font-size: 14px;
+
+        header button, footer button {
+            padding: 10px 20px;
+            background-color: #f5f5f5;
+            color: #333;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
             cursor: pointer;
-            margin-right: 5px;
+            transition: background-color 0.3s;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        header button:hover, footer button:hover {
+            background-color: #e0e0e0;
+        }
+
+        .playlist-container {
+            display: flex;
+            align-items: flex-start;
+            justify-content: flex-start;
+            min-height: calc(100vh - 80px);
+            padding-bottom: 80px;
+        }
+
+        .carousel {
+            width: 300px;
+            margin-right: 40px;
+        }
+
+        .carousel .slick-slide {
+            text-align: center;
+            margin: 0 10px;
+        }
+
+        .button {
+            display: block;
+            padding: 10px 20px;
+            background-color: #f5f5f5;
+            color: #333;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .button:hover {
+            background-color: #e0e0e0;
+        }
+
+        .video-column {
+            width: 640px;
+            height: 360px;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: #f5f5f5;
+            height: 60px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+        }
+
+        .loading {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .video-title {
+            text-align: center;
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        /* Estilo para o botão de rolagem ao topo */
+        .scroll-to-top {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            background-color: #f5f5f5;
+            color: #333;
+            border: none;
+            border-radius: 5px;
+            font-size: 20px;
+            text-align: center;
+            line-height: 40px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .scroll-to-top:hover {
+            background-color: #e0e0e0;
         }
     </style>
 </head>
 <body>
-    <h1>📌 Desafios Matemáticos</h1>
+    <header>
+        <h1>WEB PLAYER - EQUIPEVT</h1>
+        <button onclick="chooseFile()">Carregar Arquivo M3U</button>
+    </header>
     
+
+    <div class="playlist-container">
+        <div class="carousel" id="carousel"></div>
+        <div class="video-column">
+            <div class="video-title" id="videoTitle"></div>
+            <div id="player"></div>
+        </div>
+        <div class="loading">👈Escolha o Canal...</div>
+    </div>
+
+    <footer>
+        <p>EquipeVT 2025</p>
+    </footer>
+
+    <input type="file" id="fileInput" accept=".m3u" style="display: none;">
+
+    <button class="scroll-to-top" onclick="scrollToTop()">
+        &uarr;
+    </button>
+
     <script>
-        const questoes = [
-            { pergunta: "A soma de três números consecutivos é 72. Qual é o menor número?", resposta: "23", explicacao: "Os três números consecutivos podem ser representados como x, x+1 e x+2. Assim, temos: x + (x+1) + (x+2) = 72 → 3x + 3 = 72 → 3x = 69 → x = 23." },
-            { pergunta: "Um carro percorre 240 km em 3 horas. Qual é sua velocidade média?", resposta: "80 km/h", explicacao: "A velocidade média é calculada pela fórmula v = d/t, onde d é a distância e t é o tempo. Assim, v = 240 km / 3 h = 80 km/h." },
-            { pergunta: "Se um ângulo interno de um triângulo é 90°, como chamamos esse triângulo?", resposta: "Triângulo retângulo", explicacao: "Um triângulo que possui um ângulo reto (90°) é chamado de triângulo retângulo." },
-            { pergunta: "Qual é a raiz quadrada de 144?", resposta: "12", explicacao: "A raiz quadrada de 144 é o número que multiplicado por si mesmo resulta em 144, ou seja, 12 × 12 = 144." },
-            { pergunta: "Se um quadrado tem lado 6 cm, qual é sua área?", resposta: "36 cm²", explicacao: "A área de um quadrado é dada por A = lado². Assim, 6 × 6 = 36 cm²." },
-            { pergunta: "Se um produto custa R$ 200 e está com 25% de desconto, qual é o preço final?", resposta: "R$ 150", explicacao: "25% de 200 é 200 × 0,25 = 50. Então, 200 - 50 = R$ 150." },
-            { pergunta: "Qual é o resultado de 8³?", resposta: "512", explicacao: "8³ significa 8 × 8 × 8, que é igual a 512." },
-            { pergunta: "Se um círculo tem raio 7 cm, qual é aproximadamente sua área? (use π ≈ 3,14)", resposta: "153,86 cm²", explicacao: "A área do círculo é A = πr². Assim, 3,14 × 7² = 3,14 × 49 = 153,86 cm²." },
-            { pergunta: "Se 4x = 20, qual é o valor de x?", resposta: "5", explicacao: "Dividindo ambos os lados por 4, temos x = 20 ÷ 4 = 5." },
-            { pergunta: "Qual é o valor de 15% de 300?", resposta: "45", explicacao: "15% de 300 é 300 × 0,15 = 45." }
-        ];
-        
-        document.write(questoes.map((q, i) => `
-            <div class="questao">
-                <p>${i + 1}️⃣ ${q.pergunta}</p>
-                <button onclick="mostrarResposta(${i})">Mostrar Resposta</button>
-                <button onclick="mostrarExplicacao(${i})">Mostrar Explicação</button>
-                <p id="resposta${i}" class="resposta">✅ Resposta: ${q.resposta}</p>
-                <p id="explicacao${i}" class="explicacao">🔍 Explicação: ${q.explicacao}</p>
-            </div>
-        `).join(""));
-        
-    </script>
+        var carousel = document.getElementById('carousel');
+        var player = document.getElementById('player');
+        var loading = document.querySelector('.loading');
+        var videoTitle = document.getElementById('videoTitle');
+        var playlistData = [];
+
+        document.getElementById('fileInput').addEventListener('change', function(event) {
+            var file = event.target.files[0];
+            var reader = new FileReader();
+
+            reader.onload = function(e) {
+                var playlist = e.target.result;
+                showLoading(); // Mostrar o elemento de loading
+                processPlaylist(playlist);
+            };
+
+            reader.readAsText(file);
+        });
+        function processPlaylist(playlist) {
+    carousel.innerHTML = '';
+    player.innerHTML = '';
+    playlistData = [];
+
+    var playlistLines = playlist.split('\n').filter(line => line.trim() !== '' && !line.startsWith('#EXTM3U'));
+
+    var currentTitle = '';
+    var currentLogo = '';
+
+    playlistLines.forEach((line, index) => {
+        if (line.startsWith('#EXTINF:')) {
+            let nameMatch = line.match(/tvg-name="([^"]+)"/);
+            currentTitle = nameMatch ? nameMatch[1] : `Canal ${index}`;
+
+            let logoMatch = line.match(/tvg-logo="([^"]+)"/);
+            currentLogo = logoMatch ? logoMatch[1] : '';
+        } else if (line.startsWith('http')) {
+            var url = line.trim();
+
+            // Adicionar "/live/" após a porta, se houver
+            url = url.replace(/(https?:\/\/[^\/:]+:\d+)(\/|$)/, '$1/live/');
+
+            // Verificar se já tem uma extensão
+            let hasExtension = url.match(/\.(mp4|m3u8|ts|mkv|avi|mov|flv|wmv|webm)$/i);
+            if (!hasExtension) {
+                url += '.m3u8';
+            }
+
+            playlistData.push({
+                url: url,
+                title: currentTitle,
+                logo: currentLogo
+            });
+
+            currentTitle = '';
+            currentLogo = '';
+        }
+    });
+
+    renderPlaylistButtons();
+    initializeCarousel();
+}
+
+
+
+var searchInput = document.createElement('input');
+searchInput.type = 'text';
+searchInput.placeholder = 'Pesquisar canal...';
+searchInput.className = 'search-input';
+searchInput.oninput = filterChannels;
+document.body.insertBefore(searchInput, carousel);
+
+function filterChannels() {
+    var searchTerm = searchInput.value.toLowerCase();
+    var buttons = document.querySelectorAll('.button');
     
-    <script>
-        function mostrarResposta(num) {
-            document.getElementById("resposta" + num).style.display = "block";
+    buttons.forEach(button => {
+        var title = button.textContent.toLowerCase();
+        if (title.includes(searchTerm)) {
+            button.style.display = 'block';
+        } else {
+            button.style.display = 'none';
         }
-        function mostrarExplicacao(num) {
-            document.getElementById("explicacao" + num).style.display = "block";
+    });
+}
+
+
+function renderPlaylistButtons() {
+    // Ordena os canais em ordem alfabética
+    playlistData.sort((a, b) => a.title.localeCompare(b.title, 'pt-BR'));
+
+    playlistData.forEach((video, index) => {
+        var button = document.createElement('div');
+        button.className = 'button';
+        button.textContent = video.title;
+        button.onclick = function() {
+            showLoading(); // Mostrar o elemento de loading
+            changeVideo(video.url, video.title);
+        };
+
+        carousel.appendChild(button);
+    });
+}
+
+
+        function initializeCarousel() {
+            if (carousel.childElementCount > 0) {
+                // Inicializar o carrossel usando a biblioteca Slick Carousel
+                window.addEventListener('DOMContentLoaded', function() {
+                    $('.carousel').slick({
+                        infinite: false,
+                        slidesToShow: 3,
+                        slidesToScroll: 3,
+                        dots: true,
+                        arrows: false
+                    });
+                });
+            }
         }
+
+        function changeVideo(source, title) {
+            player.innerHTML = '';
+            videoTitle.textContent = title;
+
+            if (p2pml.hlsjs.Engine.isSupported()) {
+                var engine = new p2pml.hlsjs.Engine();
+
+                var clapprPlayer = new Clappr.Player({
+                    parentId: "#player",
+                    source: source,
+                    mute: true,
+                    autoPlay: true,
+                    playback: {
+                        hlsjsConfig: {
+                            liveSyncDurationCount: 7,
+                            loader: engine.createLoaderClass()
+                        }
+                    }
+                });
+
+                p2pml.hlsjs.initClapprPlayer(clapprPlayer);
+                hideLoading(); // Esconder o elemento de loading
+            } else {
+                player.innerHTML = 'Player not supported :(';
+                hideLoading(); // Esconder o elemento de loading
+            }
+        }
+
+        // Função para exibir o diálogo de seleção de arquivo ao clicar em um botão personalizado
+        function chooseFile() {
+            document.getElementById('fileInput').click();
+        }
+
+        function showLoading() {
+            loading.classList.add('active');
+        }
+
+        function hideLoading() {
+            loading.classList.remove('active');
+        }
+
+        function scrollToTop() {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        }
+
+        
     </script>
 </body>
 </html>
